@@ -15,7 +15,7 @@ bool write_cahce(hwaddr_t addr, size_t len, uint32_t data);
 uint32_t hwaddr_read(hwaddr_t addr, size_t len)
  {
  	bool flag;
- 	uint32_t d1 = 0, d2 = 0;
+ 	uint32_t d1 = 0, d2 = 0, dat = 0;
  	uint32_t up = (addr & ~((1 << cpu.cache1.b) - 1)) + (1 << cpu.cache1.b);
         //printf("Read\n");
         //printf("addr:0x%x,up:0x%x\n",addr,up);
@@ -26,18 +26,16 @@ uint32_t hwaddr_read(hwaddr_t addr, size_t len)
  		d1 = read_cache(addr, up - addr, &flag);
      
  		d2 = read_cache(up, addr + len - up, &flag);
-                if (d1 + (d2 << 16) != (dram_read(addr, len) & (~0u >> ((4 - len) << 3))))
- 			{
- 			printf("2read0x%x,expected0x%x\n", d1 + (d2 << 16), (dram_read(addr, len) & (~0u >> ((4 - len) << 3))));
- 			panic("read\n");
- 		}
- 		return d1 + (d2 << 16);
- 	}
-        if (read_cache(addr, len, &flag) != (dram_read(addr, len) & (~0u >> ((4 - len) << 3))))
- 		{
- 		printf("1read0x%x,expected0x%x\n", d1 + (d2 << 16), (dram_read(addr, len) & (~0u >> ((4 - len) << 3))));
- 		panic("read\n");
- 	}
+
+                dat = d1 + (d2 << (up - addr) * 8);
+ /*		if (dat != (dram_read(addr, len) & (~0u >> ((4 - len) << 3))))
+ 			panic("2read 0x%x,expected 0x%x\naddr:0x%x,up:0x%x,len:%d\nd1:0x%x,d2:0x%x\n", dat, (dram_read(addr, len) & (~0u >> ((4 - len) << 3))), addr, up, (int)len, d1, d2);
+*/
+ 		return dat;
+        }
+ /*       if (read_cache(addr, len, &flag) != (dram_read(addr, len) & (~0u >> ((4 - len) << 3))))
+ 		panic("1read 0x%x,expected 0x%x\n", d1 + (d2 << 16), (dram_read(addr, len) & (~0u >> ((4 - len) << 3))));
+*/
  	return read_cache(addr, len, &flag);
 }
 
@@ -108,6 +106,8 @@ uint32_t read_cache(hwaddr_t addr, size_t len, bool *flag)
  			*flag = true;
  			if (len == 4)
  				return *((uint32_t *)(set->blocks[i].buf + off));
+                        if (len == 3)
+ 				return *((uint32_t *)(set->blocks[i].buf + off)) & 0xffffff;
  			if (len == 2)
  				return *((uint16_t *)(set->blocks[i].buf + off));
  			if (len == 1)
@@ -136,6 +136,8 @@ uint32_t read_cache(hwaddr_t addr, size_t len, bool *flag)
  	}
  	if (len == 4)
  		return *((uint32_t *)(set->blocks[i].buf + off));
+        if (len == 3)
+ 		return *((uint32_t *)(set->blocks[i].buf + off)) & 0xffffff;
  	if (len == 2)
  		return *((uint16_t *)(set->blocks[i].buf + off));
  	if (len == 1)
