@@ -14,7 +14,7 @@ void reg_test() {
 	uint32_t eip_sample = rand();
 	cpu.eip = eip_sample;
 
-	int i;
+	int i,j;
 	for(i = R_EAX; i <= R_EDI; i ++) {
 		sample[i] = rand();
 		reg_l(i) = sample[i];
@@ -40,6 +40,20 @@ void reg_test() {
 	assert(sample[R_EDI] == cpu.edi);
 
 	assert(eip_sample == cpu.eip);
+
+        cpu.cache1.b = 6;
+ 	cpu.cache1.E = 8;
+ 	cpu.cache1.s = 7;
+ 	cpu.cache1.sets = (struct set *)malloc(sizeof(struct set) * (1 << (cpu.cache1.s)));
+ 	for (i = 0; i < (1 << (cpu.cache1.s)); i++)
+ 	{
+ 		cpu.cache1.sets[i].blocks = (struct block *)malloc(sizeof(struct block) * cpu.cache1.E);
+ 		for (j = 0; j < cpu.cache1.E; j++)
+ 		{
+ 			cpu.cache1.sets[i].blocks[j].buf = (uint8_t *)malloc(sizeof(uint8_t) * (1 << (cpu.cache1.b)));
+ 			cpu.cache1.sets[i].blocks[j].valid = false;
+ 		}
+ 	}
 }
 
 /*TODO: Show register files*/
