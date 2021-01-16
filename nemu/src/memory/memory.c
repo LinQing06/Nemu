@@ -105,6 +105,7 @@ uint32_t read_cache(hwaddr_t addr, size_t len, bool *flag)
  		if (set->blocks[i].tag == tag)
  		{
  			*flag = true;
+                        cpu.cache1.hit++;
  			if (len == 4)
  				return *((uint32_t *)(set->blocks[i].buf + off));
                         if (len == 3)
@@ -117,6 +118,7 @@ uint32_t read_cache(hwaddr_t addr, size_t len, bool *flag)
  		}
  	}
  	*flag = false;
+        cpu.cache1.miss++;
  	if (i < E)
  	{
  		set->blocks[i].valid = true;
@@ -175,9 +177,11 @@ uint32_t read_cache(hwaddr_t addr, size_t len, bool *flag)
  			if (len == 1)
  				*((uint8_t *)(set->blocks[i].buf + off)) = data;
  			dram_write(addr, len, data);
+                        cpu.cache1.hit++;
  			return true;
  		}
  	}
+        cpu.cache1.miss++;
  	return false;
  } 
 
