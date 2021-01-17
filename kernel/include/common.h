@@ -2,7 +2,7 @@
 #define __COMMON_H__
 
 //add
-#define IA32_SEG
+//#define IA32_SEG
 /* Uncomment these macros to enable corresponding functionality. */
 //#define IA32_SEG
 //#define IA32_PAGE
