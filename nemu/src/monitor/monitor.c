@@ -108,6 +108,23 @@ void restart() {
  			cpu.cache1.sets[i].blocks[j].valid = false;
  		}
  	}
+//add flag
+        cpu.cache2.b = 6;
+ 	cpu.cache2.E = 16;
+ 	cpu.cache2.s = 12;
+ 	cpu.cache2.hit = 0;
+ 	cpu.cache2.miss = 0;
+ 	cpu.cache2.sets = (struct set *)malloc(sizeof(struct set) * (1 << (cpu.cache2.s)));
+ 	for (i = 0; i < (1 << (cpu.cache2.s)); i++)
+ 	{
+ 		cpu.cache2.sets[i].blocks = (struct block *)malloc(sizeof(struct block) * cpu.cache2.E);
+ 		for (j = 0; j < cpu.cache2.E; j++)
+ 		{
+ 			cpu.cache2.sets[i].blocks[j].buf = (uint8_t *)malloc(sizeof(uint8_t) * (1 << (cpu.cache2.b)));
+ 			cpu.cache2.sets[i].blocks[j].valid = false;
+ 			cpu.cache2.sets[i].blocks[j].dirty = false;
+ 		}
+ 	}
 
 	/* Initialize DRAM. */
 	init_ddr3();

@@ -76,7 +76,8 @@ typedef struct {
 		uint32_t val;
 	} eflags;
 
-Cache cache1;
+        Cache cache1;
+        Cache cache2;
 
 } CPU_state;
 
