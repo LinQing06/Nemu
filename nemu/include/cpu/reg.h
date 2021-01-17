@@ -2,33 +2,12 @@
 #define __REG_H__
 
 #include "common.h"
+#include "../../../lib-common/x86-inc/cpu.h"
 
 enum { R_EAX, R_ECX, R_EDX, R_EBX, R_ESP, R_EBP, R_ESI, R_EDI };
 enum { R_AX, R_CX, R_DX, R_BX, R_SP, R_BP, R_SI, R_DI };
 enum { R_AL, R_CL, R_DL, R_BL, R_AH, R_CH, R_DH, R_BH };
-
-struct block
- {
- 	bool valid;
-        bool dirty;
-
- 	uint32_t tag;
- 	uint8_t *buf;
- };
-
- struct set
- {
- 	struct block *blocks;
- };
-
- typedef struct
- {
- 	int s, E, b;
- 	struct set *sets;
-        int miss, hit;
-
- } Cache;
-
+enum { R_ES, R_CS, R_SS, R_DS, R_FS, R_GS };
 
 /* TODO: Re-organize the `CPU_state' structure to match the register
  * encoding scheme in i386 instruction format. For example, if we
@@ -36,6 +15,25 @@ struct block
  * cpu.gpr[1]._8[1], we will get the 'ch' register. Hint: Use `union'.
  * For more details about the register encoding scheme, see i386 manual.
  */
+struct SREG{
+		uint16_t selector;
+		union {
+			struct {
+				uint32_t seg_base1 :16;
+				uint32_t seg_base2 :8;
+				uint32_t seg_base3 :8;
+			};
+			uint32_t seg_base;
+		};
+		union {
+			struct {
+				uint32_t seg_limit1 :16;
+				uint32_t seg_limit2 :4;
+				uint32_t seg_limit3 :12;
+			};
+			uint32_t seg_limit;
+		};
+};
 
 typedef struct {
      union{
@@ -53,37 +51,6 @@ typedef struct {
      };
 
      swaddr_t eip;
-
-    union CR0
- 	{
- 		struct
- 		{
- 			uint32_t protect_enable : 1;
- 			uint32_t monitor_coprocessor : 1;
- 			uint32_t emulation : 1;
- 			uint32_t task_switched : 1;
- 			uint32_t extension_type : 1;
- 			uint32_t numeric_error : 1;
- 			uint32_t pad0 : 10;
- 			uint32_t write_protect : 1;
- 			uint32_t pad1 : 1;
- 			uint32_t alignment_mask : 1;
- 			uint32_t pad2 : 10;
- 			uint32_t no_write_through : 1;
- 			uint32_t cache_disable : 1;
- 			uint32_t paging : 1;
- 		};
- 		uint32_t val;
- 	} CR0;
-
- 	struct gdtr
- 	{
- 		uint16_t limit;
- 		uint16_t base_l;
- 		uint16_t base_h;
- 	} GDTR;
-
- 	uint16_t CS, DS, ES, SS;
 
      union {
 		struct {
@@ -107,12 +74,74 @@ typedef struct {
 		uint32_t val;
 	} eflags;
 
-        Cache cache1;
-        Cache cache2;
+    struct GDTR{
+		uint32_t base_addr;
+		uint16_t seg_limit;
+	}gdtr;
+
+	CR0 cr0;
+	CR3 cr3;
+
+	union{
+		struct SREG sr[6];
+		struct{
+			struct SREG es, cs, ss, ds, fs, gs;
+		};
+	};
+
 
 } CPU_state;
-
+typedef  union {
+	struct {
+		uint16_t rpl	:2;
+		uint16_t ti	:1;
+		uint16_t index 	:13;
+	};
+	uint16_t val;
+}SELECTOR;
+typedef struct {
+	union {
+		struct {
+			uint32_t seg_limit1	:16;
+			uint32_t seg_base1	:16;
+		};
+		uint32_t first_part;
+	};
+	union {
+		struct {
+			uint32_t seg_base2 	:8;
+			uint32_t type		:5;
+			uint32_t dpl		:2;
+			uint32_t p		:1;
+			uint32_t seg_limit2	:4;
+			uint32_t avl		:1;
+			uint32_t 		:1;
+			uint32_t b		:1;
+			uint32_t g		:1;
+			uint32_t seg_base3	:8;
+		};
+		uint32_t second_part;
+	};
+}SEG_descriptor;
+typedef struct {
+	union {
+		struct {
+			uint32_t p 	:1;
+			uint32_t rw	:1;
+			uint32_t us	:1;
+			uint32_t 	:2;
+			uint32_t a	:1;
+			uint32_t d 	:1;
+			uint32_t 	:2;
+			uint32_t avail	:3;
+			uint32_t addr 	:20;
+		};
+		uint32_t page_val;
+	};
+}PAGE_descriptor;
 extern CPU_state cpu;
+uint8_t current_sreg;
+SEG_descriptor *seg_des;
 
 static inline int check_reg_index(int index) {
 	assert(index >= 0 && index < 8);
@@ -126,5 +155,7 @@ static inline int check_reg_index(int index) {
 extern const char* regsl[];
 extern const char* regsw[];
 extern const char* regsb[];
+
+void sreg_load();
 
 #endif

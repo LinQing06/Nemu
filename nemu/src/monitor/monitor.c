@@ -1,17 +1,23 @@
 #include "nemu.h"
-#include <stdlib.h>
-
 
 #define ENTRY_START 0x100000
 
 extern uint8_t entry [];
 extern uint32_t entry_len;
 extern char *exec_file;
-
+#define TLB_SIZE 64
+extern struct Tlb
+{
+	bool valid;
+	int tag;
+	int page_number;
+}tlb[TLB_SIZE];
 void load_elf_tables(int, char *[]);
 void init_regex();
 void init_wp_pool();
 void init_ddr3();
+void cache_init_l1();
+void cache_init_l2();
 
 FILE *log_fp = NULL;
 
@@ -20,9 +26,27 @@ static void init_log() {
 	Assert(log_fp, "Can not open 'log.txt'");
 }
 
+static void init_seg() {
+	cpu.cs.seg_base = 0x0;
+	cpu.cs.seg_limit = 0xffffffff;
+}
+
 static void welcome() {
 	printf("Welcome to NEMU!\nThe executable is %s.\nFor help, type \"help\"\n",
 			exec_file);
+}
+
+static void init_tlb() {
+	int i;
+	for (i = 0;i < TLB_SIZE;i ++)
+	{
+		tlb[i].valid = false;
+	}
+}
+
+static void init_cr0() {
+	cpu.cr0.protect_enable = 0;
+	cpu.cr0.paging = 0;
 }
 
 void init_monitor(int argc, char *argv[]) {
@@ -77,8 +101,6 @@ static void load_entry() {
 }
 
 void restart() {
-
-        int i, j;
 	/* Perform some initialization to restart a program */
 #ifdef USE_RAMDISK
 	/* Read the file with name `argv[1]' into ramdisk. */
@@ -91,43 +113,14 @@ void restart() {
 	/* Set the initial instruction pointer. */
 	cpu.eip = ENTRY_START;
         cpu.eflags.val = 0x2;
-        
-        cpu.cache1.b = 6;
- 	cpu.cache1.E = 8;
- 	cpu.cache1.s = 7;
-        cpu.cache1.hit = 0;
- 	cpu.cache1.miss = 0;
-
- 	cpu.cache1.sets = (struct set *)malloc(sizeof(struct set) * (1 << (cpu.cache1.s)));
- 	for (i = 0; i < (1 << (cpu.cache1.s)); i++)
- 	{
- 		cpu.cache1.sets[i].blocks = (struct block *)malloc(sizeof(struct block) * cpu.cache1.E);
- 		for (j = 0; j < cpu.cache1.E; j++)
- 		{
- 			cpu.cache1.sets[i].blocks[j].buf = (uint8_t *)malloc(sizeof(uint8_t) * (1 << (cpu.cache1.b)));
- 			cpu.cache1.sets[i].blocks[j].valid = false;
- 		}
- 	}
-//add flag
-        cpu.cache2.b = 6;
- 	cpu.cache2.E = 16;
- 	cpu.cache2.s = 12;
- 	cpu.cache2.hit = 0;
- 	cpu.cache2.miss = 0;
- 	cpu.cache2.sets = (struct set *)malloc(sizeof(struct set) * (1 << (cpu.cache2.s)));
- 	for (i = 0; i < (1 << (cpu.cache2.s)); i++)
- 	{
- 		cpu.cache2.sets[i].blocks = (struct block *)malloc(sizeof(struct block) * cpu.cache2.E);
- 		for (j = 0; j < cpu.cache2.E; j++)
- 		{
- 			cpu.cache2.sets[i].blocks[j].buf = (uint8_t *)malloc(sizeof(uint8_t) * (1 << (cpu.cache2.b)));
- 			cpu.cache2.sets[i].blocks[j].valid = false;
- 			cpu.cache2.sets[i].blocks[j].dirty = false;
- 		}
- 	}
-
-
-        cpu.CR0.val = 0;
+		
+    init_cr0();
+	init_seg();
+    init_tlb();
+	/* Initialize Cache*/
+	cache_init_l1();
+	cache_init_l2();
 	/* Initialize DRAM. */
 	init_ddr3();
 }
+

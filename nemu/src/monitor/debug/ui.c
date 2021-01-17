@@ -7,9 +7,11 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+
+#define TestCorrect(x) if(x){printf("Invalid Command!\n");return 0;}
 void cpu_exec(uint32_t);
 void display_reg();
-
+hwaddr_t page_translate_additional(lnaddr_t addr,int* flag);
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 char* rl_gets() {
 	static char *line_read = NULL;
@@ -67,7 +69,8 @@ static int cmd_x(char *args) {
 
 		bool success;
 		addr = expr(arg + strlen(arg) + 1, &success);
-		if(success) { 
+		if(success) {
+			current_sreg = R_DS;
 			for(i = 0; i < n; i ++) {
 				if(i % 4 == 0) {
 					printf("0x%08x: ", addr);
@@ -93,7 +96,9 @@ static int cmd_p(char *args) {
 
 	if(args) {
 		uint32_t r = expr(args, &success);
-		if(success) { printf("0x%08x(%d)\n", r, r); }
+		if(success) { 
+			current_sreg = R_DS;
+			printf("0x%08x(%d)\n", r, r); }
 		else { printf("Bad expression\n"); }
 	}
 	return 0;
@@ -158,6 +163,17 @@ static int cmd_q(char *args) {
 
 static int cmd_help(char *args);
 
+static int cmd_page(char* args) {
+	TestCorrect(args == NULL);
+	uint32_t addr;
+	sscanf(args, "%x", &addr);
+	int flag = 0;
+	uint32_t real_addr = page_translate_additional(addr,&flag);
+	if (flag == 0) printf("0x%08x\n",real_addr);
+	else if (flag == 1) printf("Dir Cannot Be Used!\n");
+	else printf("Page Cannot Be Used!\n");
+	return 0;
+}
 static struct {
 	char *name;
 	char *description;
@@ -174,7 +190,8 @@ static struct {
         { "p", "Evaluate the value of expression", cmd_p },
 	{ "w", "Set watchpoint", cmd_w },
 	{ "d", "Delete watchpoint", cmd_d },
-	{ "bt", "Display backtrace", cmd_bt }
+	{ "bt", "Display backtrace", cmd_bt },
+	{ "page","Print page information", cmd_page},
 
 };
 
@@ -236,3 +253,4 @@ void ui_mainloop() {
 		if(i == NR_CMD) { printf("Unknown command '%s'\n", cmd); }
 	}
 }
+

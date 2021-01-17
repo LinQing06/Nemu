@@ -7,8 +7,9 @@
 #include "data-mov/movext.h"
 #include "data-mov/cltd.h"
 #include "data-mov/leave.h"
-#include "data-mov/gdt.h"
-
+#include "data-mov/lgdt.h"
+#include "data-mov/popa.h"
+#include "data-mov/pusha.h"
 #include "arith/cmp.h"
 #include "arith/dec.h"
 #include "arith/inc.h"
@@ -32,17 +33,21 @@
 #include "logic/shrd.h"
 #include "logic/test.h"
 #include "logic/setcc.h"
+#include "logic/std.h"
 
 #include "control/call.h"
 #include "control/ret.h"
 #include "control/jcc.h"
 #include "control/jmp.h"
+#include "control/jg.h"
+#include "control/jge.h"
 
 #include "string/rep.h"
 #include "string/movs.h"
 #include "string/lods.h"
 #include "string/scas.h"
 #include "string/stos.h"
+#include "string/cld.h"
 
 #include "misc/misc.h"
 
