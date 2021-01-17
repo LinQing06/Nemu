@@ -79,7 +79,8 @@ uint32_t read_cache(hwaddr_t addr, size_t len, bool *flag)
 	uint32_t index, tag, off, E;
 	struct set *set;
 	int i, j;
-	bool flag2;
+//modified
+	//bool flag2;
 	index = (addr >> cpu.cache1.b) & ((1 << cpu.cache1.s) - 1);
 	tag = addr >> (cpu.cache1.s + cpu.cache1.b);
 	off = addr & ((1 << cpu.cache1.b) - 1);
@@ -109,31 +110,21 @@ uint32_t read_cache(hwaddr_t addr, size_t len, bool *flag)
 		set->blocks[i].tag = tag;
 		for (j = 0; j < (1 << cpu.cache1.b); j++)
 		{
-			//set->blocks[i].buf[j] = dram_read(addr - off + j, 1) & 255;
-			set->blocks[i].buf[j] = read_cache2(addr - off + j, 1, &flag2) & 255;
+			set->blocks[i].buf[j] = dram_read(addr - off + j, 1) & 255;
+			//set->blocks[i].buf[j] = read_cache2(addr - off + j, 1, &flag2) & 255;
 		}
 	}
 	else
+//modified?
 	{
 		i = rand() % E;
- 		if (set->blocks[i].dirty)
+ 		set->blocks[i].tag = tag;
+ 		for (j = 0; j < (1 << cpu.cache1.b); j++)
  		{
- 			
- 			for (j = 0; j < (1 << cpu.cache2.b); j++)
- 			{
- 				dram_write((tag << (cpu.cache2.s + cpu.cache2.b)) + (index << cpu.cache2.b) + j, 1, set->blocks[i].buf[j]);
- 			}
-		}
-		set->blocks[i].tag = tag;
-		for (j = 0; j < (1 << cpu.cache2.b); j++)
-		{
-			set->blocks[i].buf[j] = dram_read(addr - off + j, 1) & 255;
-		}
-		set->blocks[i].tag = tag;
-		for (j = 0; j < (1 << cpu.cache2.b); j++)
-		{
-			set->blocks[i].buf[j] = dram_read(addr - off + j, 1) & 255;
-		}
+
+ 			set->blocks[i].buf[j] = dram_read(addr - off + j, 1) & 255;
+ 			//set->blocks[i].buf[j] = read_cache2(addr - off + j, 1, &flag2) & 255;
+ 		}
 	}
 	if (len == 4)
 		return *((uint32_t *)(set->blocks[i].buf + off));
@@ -215,7 +206,7 @@ uint32_t read_cache2(hwaddr_t addr, size_t len, bool *flag)
 		set->blocks[i].valid = true;
  		set->blocks[i].tag = tag;
 //modified
-                printf("P1\n");
+                printf("P1:0x%x\n",addr-off);
  		for (j = 0; j < (1 << cpu.cache2.b); j++)
  		{
  			//printf("%d\n",j);
@@ -244,13 +235,7 @@ else
 		{
 			set->blocks[i].buf[j] = dram_read(addr - off + j, 1) & 255;
 		}
-//modified
 
-	/*	set->blocks[i].tag = tag;
-		for (j = 0; j < (1 << cpu.cache2.b); j++)
-		{
-			set->blocks[i].buf[j] = dram_read(addr - off + j, 1) & 255;
-		}*/
 	}
 //modified
         printf("P3\n");
